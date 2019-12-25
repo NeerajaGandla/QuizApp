@@ -26,6 +26,10 @@ import com.neeraja.quizjava.model.Question;
 import com.neeraja.quizjava.util.Testing;
 import com.neeraja.quizjava.viewmodel.QuestionsViewModel;
 
+import org.apache.commons.lang3.StringEscapeUtils;
+
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -122,6 +126,7 @@ public class QuestionActivity extends AppCompatActivity {
             @Override
             public void onChanged(List<Question> questions) {
                 if (questions != null) {
+                    Log.d(TAG, "onChanged: ");
                     Testing.printQuestions(questions, TAG);
                     questionList = questions;
                     updateQuestion(0);
@@ -132,16 +137,16 @@ public class QuestionActivity extends AppCompatActivity {
     }
 
     private void updateQuestion(int position) {
-        questionTv.setText(questionList.get(position).getQuestion());
+        questionTv.setText(StringEscapeUtils.unescapeHtml4(questionList.get(position).getQuestion()));
         List<String> answerOptions = questionList.get(position).getIncorrect_answers();
         answerOptions.add(questionList.get(position).getCorrect_answer());
         Collections.shuffle(answerOptions);
         questionNumTv.setText(String.valueOf(position + 1));
+
         for (int i = 0; i < optionsGroup.getChildCount(); i++) {
-            if (!isAnswered[position])
-                ((RadioButton) optionsGroup.getChildAt(i)).setChecked(false);
-            ((RadioButton) optionsGroup.getChildAt(i)).setText(answerOptions.get(i));
+            ((RadioButton) optionsGroup.getChildAt(i)).setText(StringEscapeUtils.unescapeHtml4(answerOptions.get(i)));
         }
+
         currentPosition = position;
         manageButtons(position);
     }
@@ -150,8 +155,10 @@ public class QuestionActivity extends AppCompatActivity {
     public void onRadioButtonClicked(RadioButton radioButton) {
         boolean checked = radioButton.isChecked();
         if (checked) {
+            isAnswered[currentPosition] = true;
             answersMap.put(currentPosition, radioButton.getText().toString());
         }
+        radioButton.setChecked(checked);
     }
 
     @OnClick({R.id.btn_quit_quiz, R.id.btn_submit, R.id.btn_prev, R.id.btn_next})
@@ -164,11 +171,13 @@ public class QuestionActivity extends AppCompatActivity {
                 submitQuiz();
                 break;
             case R.id.btn_prev:
+                optionsGroup.clearCheck();
                 if (questionList != null) {
                     updateQuestion(currentPosition - 1);
                 }
                 break;
             case R.id.btn_next:
+                optionsGroup.clearCheck();
                 if (questionList != null) {
                     updateQuestion(currentPosition + 1);
                 }
@@ -184,7 +193,7 @@ public class QuestionActivity extends AppCompatActivity {
     }
 
     public void showQuitAlert() {
-        AlertDialog.Builder builder = new AlertDialog.Builder(getApplicationContext());
+        AlertDialog.Builder builder = new AlertDialog.Builder(QuestionActivity.this);
         builder.setMessage("Are You Sure You Want to Quit?");
         builder.setPositiveButton("YES", new DialogInterface.OnClickListener() {
             @Override
@@ -202,7 +211,6 @@ public class QuestionActivity extends AppCompatActivity {
         AlertDialog d = builder.create();
         d.show();
     }
-
 
     private void manageButtons(int position) {
         if (position == questionList.size() - 1) {
