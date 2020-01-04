@@ -15,6 +15,7 @@ package com.neeraja.quizjava.view.adapters;
  * limitations under the License.
  */
 
+import android.content.BroadcastReceiver;
 import android.content.Context;
 
 import androidx.constraintlayout.widget.ConstraintLayout;
@@ -33,10 +34,13 @@ import com.neeraja.quizjava.R;
 import com.neeraja.quizjava.model.Category;
 import com.neeraja.quizjava.view.activities.OptionsActivity;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.CategoryViewHolder> {
+public class CategoryAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
+    private static final int LOADING_TYPE = 2;
+    private static final int CATEGORY_TYPE = 3;
 
     class CategoryViewHolder extends RecyclerView.ViewHolder {
         @BindView(R.id.tv_category_name)
@@ -49,6 +53,10 @@ public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.Catego
             ButterKnife.bind(this, itemView);
         }
 
+        public void onBind(Category category) {
+            categoryItemView.setText(category.getName());
+        }
+
         @OnClick(R.id.layout_category)
         public void onClickView(View v) {
             int itemPosition = getAdapterPosition();
@@ -56,6 +64,15 @@ public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.Catego
             Intent intent = new Intent(context, OptionsActivity.class);
             intent.putExtra("categoryId", item.getId());
             context.startActivity(intent);
+        }
+    }
+
+    @Override
+    public int getItemViewType(int position) {
+        if (mCategorys.get(position).getName().equals("LOADING...")) {
+            return LOADING_TYPE;
+        } else {
+            return CATEGORY_TYPE;
         }
     }
 
@@ -69,19 +86,26 @@ public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.Catego
     }
 
     @Override
-    public CategoryViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-        View itemView = mInflater.inflate(R.layout.category_item, parent, false);
-        return new CategoryViewHolder(itemView);
+    public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+        View itemView = null;
+        switch (viewType) {
+            case LOADING_TYPE:
+                itemView = mInflater.inflate(R.layout.layout_loading_list_item, parent, false);
+                return new LoadingViewHolder(itemView);
+            case CATEGORY_TYPE:
+                itemView = mInflater.inflate(R.layout.category_item, parent, false);
+                return new CategoryViewHolder(itemView);
+            default:
+                itemView = mInflater.inflate(R.layout.category_item, parent, false);
+                return new CategoryViewHolder(itemView);
+        }
     }
 
     @Override
-    public void onBindViewHolder(CategoryViewHolder holder, int position) {
-        if (mCategorys != null) {
-            Category current = mCategorys.get(position);
-            holder.categoryItemView.setText(current.getName());
-        } else {
-            // Covers the case of data not being ready yet.
-            holder.categoryItemView.setText("No Category");
+    public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
+        int itemViewType = getItemViewType(position);
+        if (itemViewType == CATEGORY_TYPE) {
+            ((CategoryViewHolder) holder).onBind(mCategorys.get(position));
         }
     }
 
@@ -98,6 +122,52 @@ public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.Catego
             return mCategorys.size();
         else return 0;
     }
+
+    // display loading during search request
+    public void displayOnlyLoading() {
+        clearList();
+        Category recipe = new Category();
+        recipe.setName("LOADING...");
+        mCategorys.add(recipe);
+        notifyDataSetChanged();
+    }
+
+    private void clearList() {
+        if (mCategorys == null) {
+            mCategorys = new ArrayList<>();
+        } else {
+            mCategorys.clear();
+        }
+        notifyDataSetChanged();
+    }
+
+    public void setQueryExhausted() {
+        hideLoading();
+        Category exhaustedRecipe = new Category();
+        exhaustedRecipe.setName("EXHAUSTED...");
+        mCategorys.add(exhaustedRecipe);
+        notifyDataSetChanged();
+    }
+
+    public void hideLoading() {
+        if (isLoading()) {
+            if (mCategorys.get(0).getName().equals("LOADING...")) {
+                mCategorys.remove(0);
+            } else if (mCategorys.get(mCategorys.size() - 1).equals("LOADING...")) {
+                mCategorys.remove(mCategorys.size() - 1);
+            }
+            notifyDataSetChanged();
+        }
+    }
+
+    private boolean isLoading() {
+        if (mCategorys != null) {
+            if (mCategorys.size() > 0) {
+                if (mCategorys.get(mCategorys.size() - 1).getName().equals("LOADING...")) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
 }
-
-

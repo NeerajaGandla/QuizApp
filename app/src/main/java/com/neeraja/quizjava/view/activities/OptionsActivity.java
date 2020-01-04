@@ -47,7 +47,7 @@ public class OptionsActivity extends AppCompatActivity {
         String difficulty = getDifficulty(checkedId);
         if (Utils.isValidString(noOfQuestions)) {
             Intent intent = new Intent(getApplicationContext(), QuestionActivity.class);
-            intent.putExtra("noOfQuestions", noOfQuestions);
+            intent.putExtra("noOfQuestions", Integer.parseInt(noOfQuestions));
             intent.putExtra("difficulty", difficulty);
             intent.putExtra("categoryId", categoryId);
             startActivity(intent);

@@ -7,11 +7,14 @@ import butterknife.OnClick;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.text.Html;
+import android.text.method.LinkMovementMethod;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.neeraja.quizjava.R;
+import com.neeraja.quizjava.model.Category;
 
 public class ScoreActivity extends AppCompatActivity {
 
@@ -54,7 +57,8 @@ public class ScoreActivity extends AppCompatActivity {
     private void share() {
         Intent sendIntent = new Intent();
         sendIntent.setAction(Intent.ACTION_SEND);
-        String remarks = "I have attempted " + noOfQuestions + "Questions and " + score + " answers are correct"
+        String remarks = "I have attempted <font color=#cc0029>" + noOfQuestions + "</font> Questions and <font color=#cc0029>"
+                + (int)score + "</font> answers are correct"
                 + " on Quiz App. Try it out at: http://test.com/quizapp";
         sendIntent.putExtra(Intent.EXTRA_TEXT, remarks);
         sendIntent.setType("text/plain");
@@ -71,6 +75,15 @@ public class ScoreActivity extends AppCompatActivity {
 
     private void updateData() {
         scoreTv.setText(percentage + "%" + " score");
-        remarksTv.setText("You have attempted " + noOfQuestions + "Questions and " + score + " answers are correct");
+        String remarks = "I have attempted <font color=#E88331>" + noOfQuestions + "</font> Questions and <font color=#E88331>"
+                + (int)score + "</font> answers are correct"
+                + " on Quiz App. Try it out <a href=\"http://test.com/quizapp\">Here</a>";
+        remarksTv.setText(Html.fromHtml(remarks));
+        remarksTv.setMovementMethod(LinkMovementMethod.getInstance());
+    }
+
+    @Override
+    public void onBackPressed() {
+        startActivity(new Intent(ScoreActivity.this, CategoriesActivity.class));
     }
 }

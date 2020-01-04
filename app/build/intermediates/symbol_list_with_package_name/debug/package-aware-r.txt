@@ -965,6 +965,7 @@ dimen notification_small_icon_size_as_large
 dimen notification_subtext_size
 dimen notification_top_pad
 dimen notification_top_pad_large_text
+dimen recycler_loading_view_height
 dimen subtitle_corner_radius
 dimen subtitle_outline_width
 dimen subtitle_shadow_offset
@@ -1506,6 +1507,7 @@ layout fragment_gallery
 layout fragment_home
 layout fragment_home_second
 layout fragment_slideshow
+layout layout_loading_list_item
 layout mtrl_layout_snackbar
 layout mtrl_layout_snackbar_include
 layout nav_header_main
@@ -1533,6 +1535,7 @@ menu main
 mipmap ic_launcher
 mipmap ic_launcher_round
 navigation mobile_navigation
+string PORT_NUMBER
 string abc_action_bar_home_description
 string abc_action_bar_up_description
 string abc_action_menu_overflow_description

@@ -3,12 +3,38 @@ package com.neeraja.quizjava.model;
 import java.util.List;
 
 public class Question {
+
+    private int questionId;
+
+    private int categoryId;
+
     private String category;
+
     private String type;
+
     private String difficulty;
+
     private String question;
+
     private String correct_answer;
+
     private List<String> incorrect_answers;
+
+    public int getQuestionId() {
+        return questionId;
+    }
+
+    public void setQuestionId(int questionId) {
+        this.questionId = questionId;
+    }
+
+    public int getCategoryId() {
+        return categoryId;
+    }
+
+    public void setCategoryId(int categoryId) {
+        this.categoryId = categoryId;
+    }
 
     public String getCategory() {
         return category;
@@ -61,7 +87,8 @@ public class Question {
     @Override
     public String toString() {
         return "Question{" +
-                "category='" + category + '\'' +
+                "categoryId=" + categoryId +
+                ", category='" + category + '\'' +
                 ", type='" + type + '\'' +
                 ", difficulty='" + difficulty + '\'' +
                 ", question='" + question + '\'' +

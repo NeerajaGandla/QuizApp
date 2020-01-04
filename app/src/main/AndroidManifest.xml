@@ -18,7 +18,8 @@
         <activity android:name=".view.activities.ScoreActivity" />
         <activity android:name=".view.activities.QuestionActivity" />
         <activity android:name=".view.activities.OptionsActivity" />
-        <activity android:name=".view.activities.CategoriesActivity"
+        <activity
+            android:name=".view.activities.CategoriesActivity"
             android:theme="@style/Theme.AppCompat.Light.NoActionBar">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

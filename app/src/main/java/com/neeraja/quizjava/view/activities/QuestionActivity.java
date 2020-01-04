@@ -1,7 +1,9 @@
 package com.neeraja.quizjava.view.activities;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.Observer;
+import androidx.lifecycle.SavedStateVMFactory;
 import androidx.lifecycle.ViewModelProviders;
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -13,6 +15,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.CountDownTimer;
+import android.os.PersistableBundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -23,6 +26,7 @@ import android.widget.Toast;
 
 import com.neeraja.quizjava.R;
 import com.neeraja.quizjava.model.Question;
+import com.neeraja.quizjava.util.Resource;
 import com.neeraja.quizjava.util.Testing;
 import com.neeraja.quizjava.viewmodel.QuestionsViewModel;
 
@@ -34,12 +38,15 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.concurrent.TimeUnit;
 
 public class QuestionActivity extends AppCompatActivity {
 
     private static final String TAG = "QuestionActivity";
 
-    private String difficulty, noOfQuestions;
+    private String difficulty;
+    private int noOfQuestions;
     private int categoryId;
     private QuestionsViewModel questionsViewModel;
     private List<Question> questionList = new ArrayList<>();
@@ -71,21 +78,49 @@ public class QuestionActivity extends AppCompatActivity {
 
         ButterKnife.bind(this);
 
-        questionsViewModel = ViewModelProviders.of(this).get(QuestionsViewModel.class);
+        questionsViewModel = ViewModelProviders.of(QuestionActivity.this, new SavedStateVMFactory(this)).get(QuestionsViewModel.class);
 
         getIncomingIntent();
         subscribeObservers();
-        getQuestions();
+//        questionsViewModel.getPosition().observe(this, new Observer<Integer>() {
+//            @Override
+//            public void onChanged(Integer position) {
+//                currentPosition = position;
+//                updateQuestionNum(position);
+//                manageButtons(position);
+//            }
+//        });
+//
+//        questionsViewModel.getTime().observe(this, new Observer<Long>() {
+//            @Override
+//            public void onChanged(Long time) {
+//                timeLeft = time;
+//            }
+//        });
     }
 
+    private long timeLeft;
+    private CountDownTimer timer;
+
     private void setTimer(int noOfQuestions) {
-        int totalTime = noOfQuestions * 20 * 1000;
+        long totalTime = 0;
+        if (timeLeft != 0) {
+            totalTime = timeLeft;
+        } else {
+            totalTime = noOfQuestions * 20 * 1000;
+        }
         int interval = 1000;
-        new CountDownTimer(totalTime, interval) { //20 seconds for each question
+
+        Log.d(TAG, "setTimer: " + totalTime);
+
+        timer = new CountDownTimer(totalTime, interval) {
 
             public void onTick(long millisUntilFinished) {
-                String sSeconds = String.format("%02d", millisUntilFinished / 1000);
-                timerTv.setText(sSeconds);
+                timeLeft = millisUntilFinished;
+                String text = String.format(Locale.getDefault(), "%02d : %02d ",
+                        TimeUnit.MILLISECONDS.toMinutes(millisUntilFinished) % 60,
+                        TimeUnit.MILLISECONDS.toSeconds(millisUntilFinished) % 60);
+                timerTv.setText(text);
             }
 
             public void onFinish() {
@@ -122,18 +157,45 @@ public class QuestionActivity extends AppCompatActivity {
     }
 
     public void subscribeObservers() {
-        questionsViewModel.getQuestions().observe(this, new Observer<List<Question>>() {
+        questionsViewModel.getQuestions(noOfQuestions, categoryId, difficulty).observe(this, new Observer<List<Question>>() {
             @Override
             public void onChanged(List<Question> questions) {
                 if (questions != null) {
-                    Log.d(TAG, "onChanged: ");
-                    Testing.printQuestions(questions, TAG);
-                    questionList = questions;
-                    updateQuestion(0);
-                    setTimer(questions.size());
+                    if (categoryId == questionsViewModel.getCategoryId()) {
+                        Log.d(TAG, "onChanged: ");
+                        Testing.printQuestions(questions, TAG);
+                        questionList = questions;
+                        if (currentPosition == 0) {
+                            updateQuestion(currentPosition);
+                            setTimer(questions.size());
+                        }
+                    }
                 }
             }
         });
+    }
+
+    @Override
+    protected void onSaveInstanceState(@NonNull Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putInt("position", currentPosition);
+        outState.putLong("time", timeLeft);
+        Log.d(TAG, "onSaveInstanceState: " + currentPosition);
+        Log.d(TAG, "onSaveInstanceState: " + timeLeft);
+    }
+
+    @Override
+    protected void onRestoreInstanceState(@NonNull Bundle savedInstanceState) {
+        super.onRestoreInstanceState(savedInstanceState);
+        timeLeft = savedInstanceState.getLong("time", 0);
+        currentPosition = savedInstanceState.getInt("position", 0);
+        Log.d(TAG, "onRestoreInstanceState: " + noOfQuestions);
+        Log.d(TAG, "onRestoreInstanceState: " + currentPosition);
+        Log.d(TAG, "onRestoreInstanceState: " + TimeUnit.MILLISECONDS.toMinutes(timeLeft) % 60 + ":" +
+                TimeUnit.MILLISECONDS.toSeconds(timeLeft) % 60);
+        setTimer(noOfQuestions);
+        updateQuestionNum(currentPosition);
+        manageButtons(currentPosition);
     }
 
     private void updateQuestion(int position) {
@@ -141,14 +203,16 @@ public class QuestionActivity extends AppCompatActivity {
         List<String> answerOptions = questionList.get(position).getIncorrect_answers();
         answerOptions.add(questionList.get(position).getCorrect_answer());
         Collections.shuffle(answerOptions);
-        questionNumTv.setText(String.valueOf(position + 1));
+        updateQuestionNum(position);
 
         for (int i = 0; i < optionsGroup.getChildCount(); i++) {
             ((RadioButton) optionsGroup.getChildAt(i)).setText(StringEscapeUtils.unescapeHtml4(answerOptions.get(i)));
         }
-
-        currentPosition = position;
         manageButtons(position);
+    }
+
+    private void updateQuestionNum(int position) {
+        questionNumTv.setText("Quiz: " + String.valueOf(position + 1));
     }
 
     @OnClick({R.id.rb_optionA, R.id.rb_optionB, R.id.rb_optionC, R.id.rb_optionD})
@@ -173,13 +237,13 @@ public class QuestionActivity extends AppCompatActivity {
             case R.id.btn_prev:
                 optionsGroup.clearCheck();
                 if (questionList != null) {
-                    updateQuestion(currentPosition - 1);
+                    updateQuestion(--currentPosition);
                 }
                 break;
             case R.id.btn_next:
                 optionsGroup.clearCheck();
                 if (questionList != null) {
-                    updateQuestion(currentPosition + 1);
+                    updateQuestion(++currentPosition);
                 }
                 break;
             default:
@@ -234,17 +298,9 @@ public class QuestionActivity extends AppCompatActivity {
     private void getIncomingIntent() {
         if (getIntent().getExtras() != null) {
             difficulty = getIntent().getStringExtra("difficulty");
-            noOfQuestions = getIntent().getStringExtra("noOfQuestions");
-            isAnswered = new boolean[Integer.parseInt(noOfQuestions)];
+            noOfQuestions = getIntent().getIntExtra("noOfQuestions", 0);
+            isAnswered = new boolean[noOfQuestions];
             categoryId = getIntent().getIntExtra("categoryId", 0);
         }
-    }
-
-    private void getQuestions() {
-        questionsApi();
-    }
-
-    private void questionsApi() {
-        questionsViewModel.questionsApi(noOfQuestions, categoryId, difficulty);
     }
 }
